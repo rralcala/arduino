@@ -1,0 +1,1 @@
+for f in "kubemetricexporter_prod_docker deploycontroller_prod_docker jobsetcontroller_prod_docker daemoncontroller_prod_docker cronjobcontroller_prod_docker statefulsetcontroller_prod_docker servicecontroller_prod_docker"; do echo $f; done
