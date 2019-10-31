@@ -14,8 +14,8 @@
 #define HEAT_LED 8
 
 
-#define LOWTEMP 20.6
-#define HIGHTEMP 23.3 // +2.7
+#define LOWTEMP 21.0
+#define HIGHTEMP 22.5 // + 2.0
 // About how long it can take for a power cycle to complete
 #define MAX_POWERCYCLE_MILLIS 28000  // Milliseconds
 
@@ -45,11 +45,10 @@ void setup()
   if (temp < LOWTEMP) {
     need_heat = true;
   }
-#ifdef DEBUG
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("setup");
   Serial.println(temp);
-#endif
+
 
   heating = !need_heat;
   power_status(need_heat);
@@ -82,14 +81,17 @@ void loop()
   }
 
   float temp = dht.readTemperature();
-#ifdef DEBUG
-  Serial.println(temp);
-#endif
+  float hum = dht.readHumidity();
+
+  Serial.print(temp);
+  Serial.print(" ");
+  Serial.println(heating);
+
 
   if (temp < LOWTEMP) {
     need_heat = true;
   }
-  if (temp > (LOWTEMP + 2.4) ) {
+  if (temp > (HIGHTEMP) ) {
     need_heat = false;
   }
 
