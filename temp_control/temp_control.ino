@@ -14,8 +14,8 @@
 #define HEAT_LED 8
 
 
-#define LOWTEMP 21.0
-#define HIGHTEMP 22.5 // + 2.0
+#define LOWTEMP 20.0
+#define HIGHTEMP 21.5
 // About how long it can take for a power cycle to complete
 #define MAX_POWERCYCLE_MILLIS 28000  // Milliseconds
 
@@ -46,10 +46,6 @@ void setup()
     need_heat = true;
   }
   Serial.begin(115200);
-  Serial.println("setup");
-  Serial.println(temp);
-
-
   heating = !need_heat;
   power_status(need_heat);
 }
@@ -85,6 +81,8 @@ void loop()
 
   Serial.print(temp);
   Serial.print(" ");
+  Serial.print(operating);
+  Serial.print(" ");
   Serial.println(heating);
 
 
@@ -105,25 +103,19 @@ void power_status(bool need_heat) {
       heating = need_heat;
       digitalWrite(HEAT_LED, heating);
       if (heating) {
-#ifdef DEBUG
-        Serial.println("Start the fire");
-#endif
+
         fireplace.on();
         delay(MAX_POWERCYCLE_MILLIS);
         fireplace.setFan(2);
         delay(2000);
         fireplace.setFlame(3);
       } else {
-#ifdef DEBUG
-        Serial.println("Stop the fire");
-#endif
+
         fireplace.off();
       }
     }
   } else if (heating) {
-#ifdef DEBUG
-    Serial.println("Stop operation");
-#endif
+
     heating = false;
     fireplace.off();
     digitalWrite(HEAT_LED, heating);
