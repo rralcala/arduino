@@ -6,31 +6,32 @@
 #include <FireplaceRF.h>
 
 // Constants
-#define DEBUG
-#define PIN_FIRE_TX 3
-#define OPER_LED 5
-#define INPIN 6
 #define DHTPIN 7
-#define HEAT_LED 8
-
-
-#define LOWTEMP 20.0
-#define HIGHTEMP 21.5
-// About how long it can take for a power cycle to complete
-#define MAX_POWERCYCLE_MILLIS 28000  // Milliseconds
-
-// Initialize DHT sensor for normal 16mhz Arduino
 // DHT 22  (AM2302)
 #define DHTTYPE DHT22
+#define HEAT_LED 8
+#define INPIN 6
+#define LOOP_DELAY_SEC 2
+// About how long it can take for a power cycle to complete
+#define MAX_POWERCYCLE_MILLIS 30000
+#define MAX_RUNTIME 25200
+#define OPER_LED 5
+#define PIN_FIRE_TX 3
+
+// Initialize DHT sensor for normal 16mhz Arduino
 DHT dht(DHTPIN, DHTTYPE);
 
 FireplaceRF fireplace(PIN_FIRE_TX);
 
 // Variables
-unsigned int runtime_left = 21600; // Seconds
-bool operating = true;
+String incomingTemp("20");
 bool heating = false;
 bool need_heat = false;
+bool operating = true;
+float high_temp = 21.5;
+float low_temp = 20.0;
+float temp = 20.0;
+unsigned int runtime_left = MAX_RUNTIME; // Seconds
 
 void setup()
 {
@@ -40,9 +41,9 @@ void setup()
   pinMode(INPIN, INPUT);
   pinMode(PIN_FIRE_TX, OUTPUT);
   digitalWrite(OPER_LED, operating);
-
-  float temp = dht.readTemperature();
-  if (temp < LOWTEMP) {
+   
+  temp = dht.readTemperature();
+  if (temp < low_temp) {
     need_heat = true;
   }
   Serial.begin(115200);
@@ -58,43 +59,6 @@ void power_toggle() {
 void power_off() {
   operating = false;
   digitalWrite(OPER_LED, operating);
-}
-
-void loop()
-{
-  // button pressed flips the operation switch
-  if (digitalRead(INPIN) == LOW) {
-    power_toggle();
-  }
-  if (runtime_left == 0) {
-    power_off();
-  }
-
-  if (heating) {
-    runtime_left -= 1;
-  } else {
-    runtime_left = 21600;
-  }
-
-  float temp = dht.readTemperature();
-  float hum = dht.readHumidity();
-
-  Serial.print(temp);
-  Serial.print(" ");
-  Serial.print(operating);
-  Serial.print(" ");
-  Serial.println(heating);
-
-
-  if (temp < LOWTEMP) {
-    need_heat = true;
-  }
-  if (temp > (HIGHTEMP) ) {
-    need_heat = false;
-  }
-
-  power_status(need_heat);
-  delay(1000);
 }
 
 void power_status(bool need_heat) {
@@ -121,4 +85,52 @@ void power_status(bool need_heat) {
     digitalWrite(HEAT_LED, heating);
     delay(MAX_POWERCYCLE_MILLIS);
   }
+}
+
+void loop()
+{
+  if (Serial.available()) {
+    // read the incoming data
+    incomingTemp = Serial.readString();
+    incomingTemp.trim();
+    low_temp = atof(incomingTemp.c_str());
+    if (low_temp < 5.0 || low_temp > 40.0) {
+      low_temp = 20.0; 
+    }
+    high_temp = low_temp + 1.5;
+    Serial.println("ACK");
+  } 
+  // button pressed flips the operation switch
+  if (digitalRead(INPIN) == LOW) {
+    power_toggle();
+  }
+  if (runtime_left == 0) {
+    power_off();
+  }
+
+  if (heating) {
+    runtime_left -= LOOP_DELAY_SEC;
+  } else {
+    runtime_left = MAX_RUNTIME;
+  }
+
+  temp = dht.readTemperature();
+
+  Serial.print(temp);
+  Serial.print(" ");
+  Serial.print(operating);
+  Serial.print(" ");
+  Serial.print(heating);
+  Serial.print(" ");
+  Serial.println(low_temp);
+
+  if (temp < low_temp) {
+    need_heat = true;
+  }
+  if (temp > high_temp ) {
+    need_heat = false;
+  }
+
+  power_status(need_heat);
+  delay(LOOP_DELAY_SEC * 1000);
 }
